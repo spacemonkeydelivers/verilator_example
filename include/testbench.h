@@ -69,13 +69,13 @@ public:
 		}
 	}
 
-	virtual bool Run(std::function<bool(const Vtop*, Counter)> callback)
+	virtual bool Run(std::function<bool(void)> callback)
 	{
 		while(!Done())
 		{
 			Tick();
 		}
-		bool result = callback(m_core, m_curClock);
+		bool result = callback();
 		return result;
 	}
 
@@ -119,14 +119,13 @@ public:
 
 	bool Check()
 	{
-		std::function<bool(const Vtop*, Counter)> check =
-			std::bind(&CounterTb::CheckFunc, this, std::placeholders::_1, std::placeholders::_2);
+		std::function<bool(void)> check = std::bind(&CounterTb::CheckFunc, this);
 		return TB::Run(check);
 	}
 
 private:
-	bool CheckFunc(const Vtop* top, Counter curClk)
+	bool CheckFunc() const
 	{
-		return (3 == top->output_o);
+		return (3 == TB::m_core->output_o);
 	}
 };
