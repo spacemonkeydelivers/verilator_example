@@ -25,6 +25,7 @@ macro(verilator_include)
 endmacro()
 
 macro(create_verilated_module module_name src_path build_path verilator_args)
+    separate_arguments(VERILATOR_ARGS_LIST WINDOWS_COMMAND "${verilator_args}")
     #TODO: handle multiple verilator_args in one string
 
     file(GLOB RTL_SRC_FILES
@@ -54,8 +55,9 @@ macro(create_verilated_module module_name src_path build_path verilator_args)
         OUTPUT ${VERILOG_OUTPUT_SOURCES}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${build_path}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${VERILATED_MODULE_HEADERS_PATH}
-        COMMAND verilator ${verilator_args}
+        COMMAND verilator ${VERILATOR_ARGS_LIST}
             -Wall
+            --exe ${cpp_path}
             -cc
             -Mdir ${build_path}
             ${RTL_SRC_FILES}
