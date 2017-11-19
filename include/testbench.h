@@ -1,17 +1,19 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 #include "Vtop.h"
+#include <functional>
 #include <cstdint>
 #include <cassert>
 
 template<class Module, bool TraceOn = false>
-class Testbench {
+class Testbench
+{
 public:
 	typedef uint64_t Counter;
 	static const unsigned LEVEL_HIGH = 1;
 	static const unsigned LEVEL_LOW  = 0;
 
-	Testbench(uint64_t num) : m_clockToRun(num)
+	Testbench(Counter num) : m_clockToRun(num)
 	{
 		m_core = new Module;
 		assert(m_core && "Failed to instantiate verilated module");
@@ -67,8 +69,18 @@ public:
 		}
 	}
 
+	virtual bool Run(std::function<bool(const Vtop*, Counter)> callback)
+	{
+		while(!Done())
+		{
+			Tick();
+		}
+		bool result = callback(m_core, m_curClock);
+		return result;
+	}
+
 	// Check if test is done
-	virtual bool Done()
+	virtual bool Done() const
 	{
 		return (m_clockToRun && (m_clockToRun <= m_curClock));
 	}
@@ -105,27 +117,16 @@ class CounterTb : public Testbench<Vtop, TraceOn>
 public:
 	CounterTb(Counter num) : TB(num) {}
 
-	// TODO: move Run() and Check() functions to the base class and pass CheckFunc() there?
 	bool Check()
 	{
-		while (!TB::Done())
-		{
-			TB::Tick();
-		}
-		if (TB::m_core->output_o == CheckFunc(TB::m_clockToRun))
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		std::function<bool(const Vtop*, Counter)> check =
+			std::bind(&CounterTb::CheckFunc, this, std::placeholders::_1, std::placeholders::_2);
+		return TB::Run(check);
 	}
 
 private:
-	// TODO:
-	uint64_t CheckFunc(Counter cnt)
+	bool CheckFunc(const Vtop* top, Counter curClk)
 	{
-		return 3;
+		return (3 == top->output_o);
 	}
 };
