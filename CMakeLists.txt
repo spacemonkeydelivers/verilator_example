@@ -25,8 +25,9 @@ macro(verilator_include)
     )
 endmacro()
 
-macro(create_verilated_module module_name src_path build_path verilator_args)
+macro(create_verilated_module module_name src_path build_path verilator_args verilator_args_post)
     separate_arguments(VERILATOR_ARGS_LIST WINDOWS_COMMAND "${verilator_args}")
+    separate_arguments(VERILATOR_ARGS_POST_LIST WINDOWS_COMMAND "${verilator_args_post}")
     #TODO: handle multiple verilator_args in one string
 
     file(GLOB RTL_SRC_FILES
@@ -34,7 +35,7 @@ macro(create_verilated_module module_name src_path build_path verilator_args)
       ${src_path}/*.v
     )
 
-    set(VERILATED_MODULE_FILES Vtop.cpp Vtop.h Vtop_top.cpp Vtop_wb_ram.cpp Vtop__Dpi.cpp Vtop__Trace.cpp Vtop__Trace__Slow.cpp Vtop__Syms.cpp)
+    set(VERILATED_MODULE_FILES Vtop.cpp Vtop.h Vtop_top.cpp Vtop_wb_ram__pi1.cpp Vtop__Dpi.cpp Vtop__Trace.cpp Vtop__Trace__Slow.cpp Vtop__Syms.cpp)
 
     set(VERILATED_MODULE_HEADERS_PATH ${build_path}/generated/include)
     set(VERILOG_OUTPUT_SOURCES "")
@@ -47,13 +48,15 @@ macro(create_verilated_module module_name src_path build_path verilator_args)
         OUTPUT ${VERILOG_OUTPUT_SOURCES}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${build_path}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${VERILATED_MODULE_HEADERS_PATH}
-        COMMAND verilator ${VERILATOR_ARGS_LIST}
+        COMMAND verilator ${VERILATOR_ARGS_LIST} -I./
+            -GMEM_FILE='\"${CMAKE_SOURCE_DIR}/test_prog.txt\"'
             -Wall
             --exe
             -cc
             -Mdir ${build_path}
             ${RTL_SRC_FILES}
             --top-module ${module_name}
+            ${VERILATOR_ARGS_POST_LIST}
         COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.mk
         COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.d
         COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.dat
@@ -79,10 +82,11 @@ set(BUILD_PATH ${CMAKE_BINARY_DIR}/build)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g")
 # TODO: use latest verilator to be able to change top lvl module params
-set(VERILATOR_FLAGS "--trace -GWIDTH=15 ")
+set(VERILATOR_FLAGS "--trace ")
+set(VERILATOR_FLAGS_POST "-Wno-lint ")
 
 verilator_include()
-create_verilated_module(top ${RTL_SRC_PATH} ${BUILD_PATH} ${VERILATOR_FLAGS})
+create_verilated_module(top ${RTL_SRC_PATH} ${BUILD_PATH} ${VERILATOR_FLAGS} ${VERILATOR_FLAGS_POST})
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 

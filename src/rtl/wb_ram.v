@@ -1,7 +1,6 @@
 module wb_ram(
    input                        wb_clk_i,
    input                        wb_rst_i,
-   /* verilator lint_off UNUSED */
    input [WB_ADDR_WIDTH - 1:0]  wb_addr_i,
    input [WB_DATA_WIDTH - 1:0]  wb_data_i,
    input [WB_BYTE_SEL - 1:0]    wb_sel_i,
@@ -9,18 +8,20 @@ module wb_ram(
    input                        wb_cyc_i,
    input                        wb_stb_i,
 
+   output                       wb_stall_o,
    output                       wb_ack_o,
    output                       wb_err_o,
    output [WB_DATA_WIDTH - 1:0] wb_data_o
 );
 
    parameter WB_DATA_WIDTH = 32;
-   parameter WB_DATA_SIZE  = 2**16;
-   parameter WB_ADDR_WIDTH = $clog2(WB_DATA_SIZE);
-   parameter WB_MEM_FILE   = "";
+   parameter MEMORY_SIZE = 2**16;
+   parameter WB_ADDR_WIDTH = 32;
+   parameter MEM_FILE = "";
    localparam BYTE_SIZE  = 8;
    localparam WB_BYTE_SEL  = WB_DATA_WIDTH / BYTE_SIZE;
 
+   assign wb_stall_o = 0;
    assign wb_err_o = 0;
 
    reg wb_ack;
@@ -40,7 +41,7 @@ module wb_ram(
 
    reg [WB_DATA_WIDTH - 1:0] data;
    assign wb_data_o = data;
-   reg [WB_DATA_WIDTH - 1:0] memory [0:WB_DATA_SIZE/4 - 1] /* verilator public */;
+   reg [WB_DATA_WIDTH - 1:0] memory [0:MEMORY_SIZE - 1] /* verilator public */;
    reg [WB_DATA_WIDTH - 1:0] tmp_data_w;
    reg [WB_ADDR_WIDTH - 1:0] tmp_addr;
 
@@ -71,10 +72,11 @@ module wb_ram(
    end
 
    generate
-      initial
-         if (WB_MEM_FILE != "") begin
-            $readmemh(WB_MEM_FILE, memory);
+      initial begin
+         if (MEM_FILE != "") begin
+            $readmemh(MEM_FILE, memory);
          end
+       end
    endgenerate
 
 endmodule

@@ -126,6 +126,6 @@ public:
 private:
 	bool CheckFunc() const
 	{
-		return (3 == TB::m_core->output_o);
+		return (true);
 	}
 };
