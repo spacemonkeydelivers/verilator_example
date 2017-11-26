@@ -1,4 +1,6 @@
 #include <iostream>
+#include <Vmodel.h>
+
 #include "testbench.h"
 
 int main(int argc, char **argv, char **env) 

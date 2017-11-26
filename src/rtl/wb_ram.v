@@ -1,6 +1,8 @@
 module wb_ram(
    input                        wb_clk_i,
    input                        wb_rst_i,
+   /* verilator lint_off UNUSED */
+
    input [WB_ADDR_WIDTH - 1:0]  wb_addr_i,
    input [WB_DATA_WIDTH - 1:0]  wb_data_i,
    input [WB_BYTE_SEL - 1:0]    wb_sel_i,
