@@ -1,9 +1,10 @@
-#include "verilated.h"
-#include "verilated_vcd_c.h"
-#include "Vtop.h"
 #include <functional>
 #include <cstdint>
 #include <cassert>
+
+#include <verilated.h>
+#include <verilated_vcd_c.h>
+#include <Vmodel.h>
 
 template<class Module, bool TraceOn = false>
 class Testbench
@@ -110,10 +111,10 @@ protected:
 
 // TODO: get parameters from verilated module
 template <bool TraceOn>
-class CounterTb : public Testbench<Vtop, TraceOn>
+class CounterTb : public Testbench<Vmodel, TraceOn>
 {
-	typedef Testbench<Vtop, TraceOn> TB;
-	using typename Testbench<Vtop, TraceOn>::Counter;
+	typedef Testbench<Vmodel, TraceOn> TB;
+	using typename Testbench<Vmodel, TraceOn>::Counter;
 public:
 	CounterTb(Counter num) : TB(num) {}
 
