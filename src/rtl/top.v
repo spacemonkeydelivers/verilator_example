@@ -1,5 +1,3 @@
-//`include "wb_common.vh"
-
 module top(
    input clk_i,
    input reset_i,
