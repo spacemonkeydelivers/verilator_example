@@ -1,73 +1,3 @@
-macro(verilator_include)
-    find_path(VERILATOR_INCLUDE verilated.h
-        PATH_SUFFIXES verilator/include
-        HINTS /usr/share
-    )
-    include_directories(SYSTEM ${VERILATOR_INCLUDE})
-    include_directories(SYSTEM ${VERILATOR_INCLUDE}/vltstd/)
-    set(VERILATOR_SOURCE_LIST
-        verilated.cpp
-        verilated_save.cpp
-        verilated_vcd_c.cpp
-    )
-
-    set(VERILATOR_SOURCES "")
-    foreach(src ${VERILATOR_SOURCE_LIST})
-        set(VERILATOR_SOURCES ${VERILATOR_SOURCES} ${VERILATOR_INCLUDE}/${src})
-    endforeach()
-
-    add_library(verilator SHARED ${VERILATOR_SOURCES})
-
-    set(VERILATOR_LIBRARY verilator)
-    set_target_properties(
-        verilator
-        PROPERTIES COMPILE_FLAGS "-std=c++11 -Wall -Werror -g"
-    )
-endmacro()
-
-macro(create_verilated_module module_name src_path build_path verilator_args verilator_args_post)
-    separate_arguments(VERILATOR_ARGS_LIST WINDOWS_COMMAND "${verilator_args}")
-    separate_arguments(VERILATOR_ARGS_POST_LIST WINDOWS_COMMAND "${verilator_args_post}")
-    #TODO: handle multiple verilator_args in one string
-
-    file(GLOB RTL_SRC_FILES
-      ${src_path}/*.vh
-      ${src_path}/*.v
-    )
-
-    set(VERILATED_MODULE_FILES Vtop.cpp Vtop.h Vtop_top.cpp Vtop_wb_ram__pi1.cpp Vtop__Dpi.cpp Vtop__Trace.cpp Vtop__Trace__Slow.cpp Vtop__Syms.cpp)
-
-    set(VERILATED_MODULE_HEADERS_PATH ${build_path}/generated/include)
-    set(VERILOG_OUTPUT_SOURCES "")
-    foreach(source ${VERILATED_MODULE_FILES})
-        set(VERILOG_OUTPUT_SOURCES ${VERILOG_OUTPUT_SOURCES}
-            ${build_path}/${source})
-    endforeach()
-
-    add_custom_command(
-        OUTPUT ${VERILOG_OUTPUT_SOURCES}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${build_path}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${VERILATED_MODULE_HEADERS_PATH}
-        COMMAND verilator ${VERILATOR_ARGS_LIST} -I./
-            -GMEM_FILE='\"${CMAKE_SOURCE_DIR}/test_prog.txt\"'
-            -Wall
-            --exe
-            -cc
-            -Mdir ${build_path}
-            ${RTL_SRC_FILES}
-            --top-module ${module_name}
-            ${VERILATOR_ARGS_POST_LIST}
-        COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.mk
-        COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.d
-        COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.dat
-        COMMAND ${CMAKE_COMMAND} -E copy ${build_path}/*.h ${VERILATED_MODULE_HEADERS_PATH}
-        COMMAND ${CMAKE_COMMAND} -E remove ${build_path}/*.h
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-    include_directories(${VERILATED_MODULE_HEADERS_PATH})
-    add_library(V${module_name} STATIC ${VERILOG_OUTPUT_SOURCES})
-endmacro()
-
 # Specify the minimum version for CMake
 cmake_minimum_required(VERSION 2.8.3)
 
@@ -77,21 +7,84 @@ project(verilated_example)
 # Set the output folder where your program will be created
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
-set(RTL_SRC_PATH ${CMAKE_SOURCE_DIR}/src/rtl)
-set(BUILD_PATH ${CMAKE_BINARY_DIR}/build)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g")
-# TODO: use latest verilator to be able to change top lvl module params
-set(VERILATOR_FLAGS "--trace ")
-set(VERILATOR_FLAGS_POST "-Wno-lint ")
 
-verilator_include()
-create_verilated_module(top ${RTL_SRC_PATH} ${BUILD_PATH} ${VERILATOR_FLAGS} ${VERILATOR_FLAGS_POST})
+# find verilator ============
+find_program(VERILATOR_BIN verilator)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
+find_path(VERILATOR_INCLUDE verilated.h
+    PATH_SUFFIXES verilator/include
+    HINTS /usr/share
+)
+
+if (${VERILATOR_BIN} MATCHES "NOTFOUND" OR ${VERILATOR_INCLUDE} MATCHES "NOTFOUND")
+    message(FATAL_ERROR "Could not find verilator.")
+endif()
+
+include_directories(SYSTEM ${VERILATOR_INCLUDE})
+include_directories(SYSTEM ${VERILATOR_INCLUDE}/vltstd/)
+#============================
+
+# compile verilator lib =====
+set(VERILATOR_LIBRARY verilated)
+set(VERILATED_SOURCE_LIST
+    verilated.cpp
+    verilated_save.cpp
+    verilated_vcd_c.cpp
+)
+
+foreach(src ${VERILATED_SOURCE_LIST})
+    set(VERILATED_SOURCES ${VERILATED_SOURCES} ${VERILATOR_INCLUDE}/${src})
+endforeach()
+
+add_library(${VERILATOR_LIBRARY} STATIC ${VERILATED_SOURCES})
+#============================
+
+#TODO: use latest verilator to be able to change top lvl module params
+set(RTL_SRC_PATH ${CMAKE_SOURCE_DIR}/src/rtl)
+set(BUILD_PATH ${CMAKE_BINARY_DIR}/build)
+set(MODULE_NAME "top")
+set(VERILATOR_FLAGS "--trace")
+set(VERILATOR_FLAGS_POST "-Wno-lint")
+
+separate_arguments(VERILATOR_ARGS_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS}")
+separate_arguments(VERILATOR_ARGS_POST_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS_POST}")
+#TODO: handle multiple verilator_args in one string
+
+file(MAKE_DIRECTORY ${BUILD_PATH})
+file(GLOB RTL_SRC_FILES
+     ${RTL_SRC_PATH}/*.vh
+     ${RTL_SRC_PATH}/*.v
+)
+
+set(VERILATED_MODULE_FILES Vtop.cpp Vtop.h Vtop_top.cpp Vtop_wb_ram__pi1.cpp Vtop__Dpi.cpp Vtop__Trace.cpp Vtop__Trace__Slow.cpp Vtop__Syms.cpp)
+foreach(source ${VERILATED_MODULE_FILES})
+    set(VERILOG_OUTPUT_SOURCES ${VERILOG_OUTPUT_SOURCES} ${BUILD_PATH}/${source})
+endforeach()
+set_source_files_properties(${VERILOG_OUTPUT_SOURCES} PROPERTIES GENERATED 1)
+
+add_custom_command(
+    OUTPUT ${VERILOG_OUTPUT_SOURCES}
+    DEPENDS ${RTL_SRC_FILES}
+    COMMAND ${VERILATOR_BIN} ${VERILATOR_ARGS_LIST} -I./
+        -GMEM_FILE="${CMAKE_SOURCE_DIR}/test_prog.txt"
+        -Wall
+        --exe
+        -cc
+        -Mdir ${BUILD_PATH}
+        ${RTL_SRC_FILES}
+        --top-module ${MODULE_NAME}
+        ${VERILATOR_ARGS_POST_LIST}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    VERBATIM
+)
+include_directories(${BUILD_PATH})
+add_library(V${MODULE_NAME} STATIC ${VERILOG_OUTPUT_SOURCES})
 
 # Set a list of sources
 set(TESTBENCH_SRC src/tb/main.cpp)
 
+include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(${PROJECT_NAME} ${TESTBENCH_SRC})
-target_link_libraries(${PROJECT_NAME} verilator Vtop)
+target_link_libraries(${PROJECT_NAME} ${VERILATOR_LIBRARY} V${MODULE_NAME})
