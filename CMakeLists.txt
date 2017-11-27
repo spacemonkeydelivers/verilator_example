@@ -8,6 +8,8 @@ project(verilated_example)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
+set(VERILATOR_FLAGS "--trace")
+set(VERILATOR_FLAGS_POST "-Wno-lint")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g")
 
 # find verilator ============
@@ -31,8 +33,10 @@ set(VERILATOR_LIBRARY verilated)
 set(VERILATED_SOURCE_LIST
     verilated.cpp
     verilated_save.cpp
-    verilated_vcd_c.cpp
 )
+if (VERILATOR_FLAGS MATCHES "trace")
+    set(VERILATED_SOURCE_LIST ${VERILATED_SOURCE_LIST} verilated_vcd_c.cpp)
+endif()
 
 foreach(src ${VERILATED_SOURCE_LIST})
     set(VERILATED_SOURCES ${VERILATED_SOURCES} ${VERILATOR_INCLUDE}/${src})
@@ -45,8 +49,6 @@ add_library(${VERILATOR_LIBRARY} STATIC ${VERILATED_SOURCES})
 set(RTL_SRC_PATH ${CMAKE_SOURCE_DIR}/src/rtl)
 set(BUILD_PATH ${CMAKE_BINARY_DIR}/build)
 set(MODULE_NAME "top")
-set(VERILATOR_FLAGS "--trace")
-set(VERILATOR_FLAGS_POST "-Wno-lint")
 
 separate_arguments(VERILATOR_ARGS_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS}")
 separate_arguments(VERILATOR_ARGS_POST_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS_POST}")
