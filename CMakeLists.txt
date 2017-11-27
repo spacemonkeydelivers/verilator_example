@@ -94,6 +94,8 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     VERBATIM
 )
+set_directory_properties(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${BUILD_PATH})
+
 include_directories(${BUILD_PATH})
 add_library(V${MODULE_NAME} STATIC ${VERILOG_OUTPUT_SOURCES})
 
