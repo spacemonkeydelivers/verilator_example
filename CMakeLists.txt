@@ -10,7 +10,7 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
 set(VERILATOR_FLAGS "--trace")
 set(VERILATOR_FLAGS_POST "-Wno-lint")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -g")
 
 # find verilator ============
 find_program(VERILATOR_BIN verilator)
@@ -56,7 +56,6 @@ separate_arguments(VERILATOR_ARGS_POST_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS_P
 
 file(MAKE_DIRECTORY ${BUILD_PATH})
 file(GLOB RTL_SRC_FILES
-     ${RTL_SRC_PATH}/*.vh
      ${RTL_SRC_PATH}/*.v
 )
 
@@ -102,7 +101,9 @@ include_directories(${BUILD_PATH})
 add_library(V${MODULE_NAME} STATIC ${VERILOG_OUTPUT_SOURCES})
 
 # Set a list of sources
-set(TESTBENCH_SRC src/tb/main.cpp)
+set(TESTBENCH_SRC src/tb/main.cpp
+                  src/tb/router/tb_router.cpp
+                  src/tb/tests/basic.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(${PROJECT_NAME} ${TESTBENCH_SRC})
