@@ -1,13 +1,13 @@
 #include "../common/module_wrapper.h"
 #include "../router/tb_router.h"
 
-#include <Vtop.h>
+#include <Vmodel.h>
 
 bool basic_run(int argc, char * argv[])
 {
     (void)argc;(void)argv;
     //TODO: parse arguments, get limits and names
-    ModuleWrapper<Vtop> dut(std::string("dump.vcd"));
+    ModuleWrapper<Vmodel> dut(std::string("dump.vcd"));
 
     dut.reset();
     const size_t limit = 10000;

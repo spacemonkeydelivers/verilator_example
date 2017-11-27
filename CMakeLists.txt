@@ -47,32 +47,19 @@ add_library(${VERILATOR_LIBRARY} STATIC ${VERILATED_SOURCES})
 
 #TODO: use latest verilator to be able to change top lvl module params
 set(RTL_SRC_PATH ${CMAKE_SOURCE_DIR}/src/rtl)
-set(BUILD_PATH ${CMAKE_BINARY_DIR}/build)
+set(RTL_MODEL_BUILD_PATH ${CMAKE_BINARY_DIR}/rtl_model_build)
 set(MODULE_NAME "top")
 
 separate_arguments(VERILATOR_ARGS_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS}")
 separate_arguments(VERILATOR_ARGS_POST_LIST WINDOWS_COMMAND "${VERILATOR_FLAGS_POST}")
 #TODO: handle multiple verilator_args in one string
 
-file(MAKE_DIRECTORY ${BUILD_PATH})
+file(MAKE_DIRECTORY ${RTL_MODEL_BUILD_PATH})
 file(GLOB RTL_SRC_FILES
      ${RTL_SRC_PATH}/*.v
 )
 
-set(VERILATED_MODULE_FILES
-    Vtop.cpp
-    Vtop_top.cpp
-    Vtop_wb_ram__pi1.cpp
-    Vtop__Dpi.cpp
-    Vtop__Trace.cpp
-    Vtop__Trace__Slow.cpp
-    Vtop__Syms.cpp
-)
-
-foreach(source ${VERILATED_MODULE_FILES})
-    set(VERILOG_OUTPUT_SOURCES ${VERILOG_OUTPUT_SOURCES} ${BUILD_PATH}/${source})
-endforeach()
-set_source_files_properties(${VERILOG_OUTPUT_SOURCES} PROPERTIES GENERATED 1)
+set(VERILOG_OUTPUT_LIB "${RTL_MODEL_BUILD_PATH}/Vmodel__ALL.a")
 
 if (NOT DEFINED MEM_FILE)
     set(MEM_FILE "${CMAKE_SOURCE_DIR}/test_prog.txt")
@@ -81,24 +68,32 @@ endif()
 message(STATUS "MEM_FILE: '${MEM_FILE}'")
 
 add_custom_command(
-    OUTPUT ${VERILOG_OUTPUT_SOURCES}
+    OUTPUT ${VERILOG_OUTPUT_LIB}
     DEPENDS ${RTL_SRC_FILES}
     COMMAND ${VERILATOR_BIN} ${VERILATOR_ARGS_LIST}
         -GMEM_FILE="${MEM_FILE}"
         -Wall
-        --exe
         -cc
-        -Mdir ${BUILD_PATH}
+        -Mdir ${RTL_MODEL_BUILD_PATH}
         ${RTL_SRC_FILES}
         --top-module ${MODULE_NAME}
         ${VERILATOR_ARGS_POST_LIST}
+        --prefix Vmodel
+    COMMAND cd ${RTL_MODEL_BUILD_PATH} && make -f Vmodel.mk
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     VERBATIM
 )
-set_directory_properties(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${BUILD_PATH})
+set_directory_properties(PROPERTY
+    ADDITIONAL_MAKE_CLEAN_FILES
+    ${RTL_MODEL_BUILD_PATH})
 
-include_directories(${BUILD_PATH})
-add_library(V${MODULE_NAME} STATIC ${VERILOG_OUTPUT_SOURCES})
+add_custom_target(
+    Vmodel ALL
+    DEPENDS "${VERILOG_OUTPUT_LIB}"
+    WORKING_DIRECTORY "${RTL_MODEL_BUILD_PATH}"
+)
+
+include_directories(${RTL_MODEL_BUILD_PATH})
 
 # Set a list of sources
 set(TESTBENCH_SRC src/tb/main.cpp
@@ -107,4 +102,7 @@ set(TESTBENCH_SRC src/tb/main.cpp
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(${PROJECT_NAME} ${TESTBENCH_SRC})
-target_link_libraries(${PROJECT_NAME} ${VERILATOR_LIBRARY} V${MODULE_NAME})
+add_dependencies(${PROJECT_NAME} Vmodel)
+target_link_libraries(${PROJECT_NAME}
+    ${VERILATOR_LIBRARY}
+    ${VERILOG_OUTPUT_LIB})
