@@ -64,11 +64,15 @@ foreach(source ${VERILATED_MODULE_FILES})
 endforeach()
 set_source_files_properties(${VERILOG_OUTPUT_SOURCES} PROPERTIES GENERATED 1)
 
+if (NOT DEFINED MEM_FILE)
+    set(MEM_FILE "${CMAKE_SOURCE_DIR}/test_prog.txt")
+endif()
+
 add_custom_command(
     OUTPUT ${VERILOG_OUTPUT_SOURCES}
     DEPENDS ${RTL_SRC_FILES}
     COMMAND ${VERILATOR_BIN} ${VERILATOR_ARGS_LIST} -I./
-        -GMEM_FILE="${CMAKE_SOURCE_DIR}/test_prog.txt"
+        -GMEM_FILE="${MEM_FILE}"
         -Wall
         --exe
         -cc
