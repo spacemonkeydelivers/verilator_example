@@ -58,7 +58,16 @@ file(GLOB RTL_SRC_FILES
      ${RTL_SRC_PATH}/*.v
 )
 
-set(VERILATED_MODULE_FILES Vtop.cpp Vtop.h Vtop_top.cpp Vtop_wb_ram__pi1.cpp Vtop__Dpi.cpp Vtop__Trace.cpp Vtop__Trace__Slow.cpp Vtop__Syms.cpp)
+set(VERILATED_MODULE_FILES
+    Vtop.cpp
+    Vtop_top.cpp
+    Vtop_wb_ram__pi1.cpp
+    Vtop__Dpi.cpp
+    Vtop__Trace.cpp
+    Vtop__Trace__Slow.cpp
+    Vtop__Syms.cpp
+)
+
 foreach(source ${VERILATED_MODULE_FILES})
     set(VERILOG_OUTPUT_SOURCES ${VERILOG_OUTPUT_SOURCES} ${BUILD_PATH}/${source})
 endforeach()
@@ -68,10 +77,12 @@ if (NOT DEFINED MEM_FILE)
     set(MEM_FILE "${CMAKE_SOURCE_DIR}/test_prog.txt")
 endif()
 
+message(STATUS "MEM_FILE: '${MEM_FILE}'")
+
 add_custom_command(
     OUTPUT ${VERILOG_OUTPUT_SOURCES}
     DEPENDS ${RTL_SRC_FILES}
-    COMMAND ${VERILATOR_BIN} ${VERILATOR_ARGS_LIST} -I./
+    COMMAND ${VERILATOR_BIN} ${VERILATOR_ARGS_LIST}
         -GMEM_FILE="${MEM_FILE}"
         -Wall
         --exe
