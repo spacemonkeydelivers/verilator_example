@@ -12,6 +12,10 @@ set(VERILATOR_FLAGS "--trace")
 set(VERILATOR_FLAGS_POST "-Wno-lint")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -g")
 
+find_package (PythonLibs REQUIRED)
+include_directories(SYSTEM "${PYTHON_INCLUDE_DIR}")
+find_package (Boost REQUIRED)
+include_directories(SYSTEM "${Boost_INCLUDE_DIR}")
 # find verilator ============
 find_program(VERILATOR_BIN verilator)
 
@@ -98,11 +102,15 @@ include_directories(${RTL_MODEL_BUILD_PATH})
 # Set a list of sources
 set(TESTBENCH_SRC src/tb/main.cpp
                   src/tb/router/tb_router.cpp
+                  src/tb/tests/py_exec.cpp
                   src/tb/tests/basic.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(${PROJECT_NAME} ${TESTBENCH_SRC})
 add_dependencies(${PROJECT_NAME} Vmodel)
+
 target_link_libraries(${PROJECT_NAME}
     ${VERILATOR_LIBRARY}
-    ${VERILOG_OUTPUT_LIB})
+    ${VERILOG_OUTPUT_LIB}
+    ${PYTHON_LIBRARIES}
+)
