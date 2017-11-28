@@ -1,4 +1,6 @@
 #include "tb_router.h"
+
+#include <sstream>
 #include <stdexcept>
 
 TB_Router& TB_Router::instance()
@@ -8,7 +10,12 @@ TB_Router& TB_Router::instance()
 }
 std::string TB_Router::print_help() const
 {
-    throw std::runtime_error("print help not implemented");
+    std::stringstream ss;
+
+    for (const auto& route: registered_calls_) {
+        ss << "    " << route.first << " - " << route.second.help << "\n";
+    }
+    return ss.str();
 }
 TB_Router::callable_t  TB_Router::find_route(const std::string& name) const
 {
